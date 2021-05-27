@@ -63,7 +63,7 @@ est_choice=function(x){return(switch(class(x),'lavaan'=parameterestimates,'jagsU
 
 #### Creates ggplot object of specified path model ####
 #### accepts model string, Lavaan or Jags model output, scale factor for paths/bullets/text, scale factor for arrows, alpha value to compare p value, toggels for outlines, text, filter to rename lavaan output to match model string ####
-eclair=function(model,fit=NULL,...){ 
+path=function(model,fit=NULL,...){ 
   default=list('pos'=c(0,0),                                                                    #Default values for vars missing from model string
                'size'=c(1,1),
                'lab'='',
@@ -79,13 +79,14 @@ eclair=function(model,fit=NULL,...){
   if(is.null(parm$outline)){parm$outline=T}
   if(is.null(parm$mask))   {parm$mask=NULL}
   if(is.null(parm$txtoff)) {parm$txtoff=F}
+  if(is.null(parm$autonudge)){parm$autonudge=T}
   if(!is.null(fit)){                                                                             #if model in call:
     e=tryCatch(est_choice(fit),error=function(e){
       cat("Could not extract parameters from model\n")})                                         #get parameter estimates
     e=e[e$op=='~',]
     e$name=paste(e$rhs,'>',e$lhs,sep='')                                                         #convert them to match model string format
     e$pvalue=e$pvalue>parm$alpha                                                                 #add p value 
-    e$nest=ceiling(abs(e$est/max(e$est)*parm$size))*sign(e$est)                                  #add modified estimates
+    e$nest=ceiling(abs(e$est/max(e$est)*parm$scal))*sign(e$est)                                  #add modified estimates
     if(!is.null(parm$mask)){for(n in names(parm$mask)){e$name=gsub(n,parm$mask[n],e$name)}}}     #rename vars
   
   lines=str_split(model,'\\]\n')[[1]]                                                            #split model string into lines
@@ -160,7 +161,7 @@ eclair=function(model,fit=NULL,...){
     if(length(points[[n]])==1){points[[n]]=list('x'=arrows[[n]]$x[4]+ax*0,'y'=arrows[[n]]$y[4]+ay*0)}
     else{bpoints[[n]]$x=points[[n]]$x*ascal[1]*abs(arrows[[n]]$est)*as+arrows[[n]]$x[4]+ax;bpoints[[n]]$y=points[[n]]$y*ascal[2]*abs(arrows[[n]]$est)*as+arrows[[n]]$y[4]+ay
     points[[n]]$x=points[[n]]$x*ascal[1]*abs(arrows[[n]]$est)+arrows[[n]]$x[4]+ax;points[[n]]$y=points[[n]]$y*ascal[2]*abs(arrows[[n]]$est)+arrows[[n]]$y[4]+ay}
-    space=parm$scal*abs(arrows[[n]]$est)/10*0                                                      #space at end of path
+    space=ifelse(parm$autonudge,parm$scal*abs(arrows[[n]]$est)/10,0)                             #space at end of path
     arrows[[n]]$midx=(arrows[[n]]$x[4]+arrows[[n]]$x[1])/2+arrow[[n]]$txtnudge[1]-space          #find midpoints of paths
     arrows[[n]]$midy=(arrows[[n]]$y[4]+arrows[[n]]$y[1])/2+arrow[[n]]$txtnudge[2]+space
   }
