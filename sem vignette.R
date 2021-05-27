@@ -14,6 +14,7 @@ load(c('ggplot2','ggdist','ggforce','stringr','lavaan','lavaanPlot'))
 devtools::source_url("https://github.com/AriGrele/sem_plot/blob/master/sem.R?raw=TRUE")
 
 #### generate example data ####
+set.seed(11)
 data=data.frame('plant'=rnorm(500,10,1))
 data$herb=data$plant/10+rnorm(500,0,.1)
 data$omni=data$herb/10+data$plant/10+rnorm(500,0,.01)
@@ -91,6 +92,7 @@ png('mask_example.png',1000,500,type='cairo');e3;dev.off();system2('open','mask_
 (merged = semmerge(fit,sem('herb~plant\npred~plant',scale(data,center=F))))
 
 #### plot parameter estimates and CIs ####
-sembars(fit,s = 5,flip=T,group='name')
-sembars(merged,s = 5,flip=T,group='name')
+sembars(fit,s = 5,flip=T)
+sembars(merged,s = 10,flip=T,group='name')
+sembars(merged,s = 10,flip=T)
 
