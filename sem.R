@@ -54,7 +54,6 @@ bparam=function(x){
   sims=x$sims.list[c('alpha','beta')]
   out=setNames(as.data.frame(matrix(ncol=9)),c('lhs','op','rhs','est','se','z','pvalue','ci.lower','ci.upper'))
   for(c in 1:length(sims)){
-    print(c)
     for(i in 2:ncol(sims[[c]])){
       co=sims[[c]][,i]
       out=rbind(out,data.frame('lhs'=names(x$sims.list)[c],'op'='~','rhs'=i,'est'=mean(co),'se'=sd(co)/sqrt(length(co)),'z'=NA,'pvalue'=pd(co),'ci.lower'=quantile(co,0.025),'ci.upper'=quantile(co,1-0.025)))}}
@@ -63,7 +62,7 @@ bparam=function(x){
 est_choice=function(x){return(switch(class(x),'lavaan'=parameterestimates,'jagsUI'=bparam)(x))}
 
 #### Creates ggplot object of specified path model ####
-#### accepts model string, Lavaan model output, scale factor for paths/bullets/text, scale factor for arrows, alpha value to compare p value, toggels for outlines, text, filter to rename lavaan output to match model string ####
+#### accepts model string, Lavaan or Jags model output, scale factor for paths/bullets/text, scale factor for arrows, alpha value to compare p value, toggels for outlines, text, filter to rename lavaan output to match model string ####
 eclair=function(model,fit=NULL,...){ 
   default=list('pos'=c(0,0),                                                                    #Default values for vars missing from model string
                'size'=c(1,1),
@@ -89,7 +88,6 @@ eclair=function(model,fit=NULL,...){
     e$nest=ceiling(abs(e$est/max(e$est)*parm$size))*sign(e$est)                                  #add modified estimates
     if(!is.null(parm$mask)){for(n in names(parm$mask)){e$name=gsub(n,parm$mask[n],e$name)}}}     #rename vars
   
-  print(e)
   lines=str_split(model,'\\]\n')[[1]]                                                            #split model string into lines
   lines=gsub('\\]$',')',gsub('\\[','list(',lines))                                               #convert to list format
   lines[-length(lines)]=paste(lines[-length(lines)],')',sep='')
@@ -110,8 +108,7 @@ eclair=function(model,fit=NULL,...){
     box=rbind(box,data.frame('n'=info[[n]]$lab,'x'=info[[n]]$pos[1],'y'=info[[n]]$pos[2],'w'=info[[n]]$size[1],'h'=info[[n]]$size[2]))}
   box=na.omit(box)
   arrows=list();points=list();bpoints=list()                                                     #create lists for data about arrow paths, arrow heads
-  for(n in names(arrow)){  
-    print(n)#for each path:
+  for(n in names(arrow)){                                                                        #for each path:
     if(is.null(fit)){row=data.frame('est'=1,'nest'=1,'pvalue'=0>parm$alpha)}                     #default values
     else{row=e[e$name==n,]}
     ns=str_split(n,'>')[[1]]                                                                     #split path into source, destination
