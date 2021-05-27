@@ -29,11 +29,12 @@ model='herb~plant
 fit=sem(model,scale(data,center=F))
 lavaanPlot(name="example",fit,labels=colnames(data),coefs=T)
 
+#######################################################################################################
 #### create path model figures ####
 # path() takes formating string, optional Lavaan or Jags model output
 # formating string is split into boxes, paths between boxes
 # boxes take arguments of position, size, label
-# paths take arguments of x/y axis from default position, x/y axis nudges for label position, labels
+# paths take arguments of x/y axis nudges from default positions, x/y axis nudges for label position, labels
 # default arguments:
 #   pos      = c(0,0)
 #   size     = c(1,1)
@@ -74,11 +75,11 @@ e2=path(format,fit,scal=2,size=5,txtoff=T)
 png('fitted_example.png',1000,500,type='cairo');e2;dev.off();system2('open','fitted_example.png')
 
 #### possible to define formatting models where variable names don't match the data using a mask ####
-format2='a [pos=c(0,5),size=c(1,6),lab="Plant\\nbiomass"]
+format2='a [pos=c(0,5),lab="Plant\\nbiomass"]
 b [pos=c(5,2.5),lab="Herbivore\\nbiomass"]
 c [pos=c(10,7.5),lab="Omnivore\\nbiomass"]
 d [pos=c(10,2.5),lab="Carnivore\\nbiomass"]
-a>b [nudge=c(0,0,0,0),txtnudge=c(0,0),txt="1"]
+a>b [txt="1"]
 a>c [nudge=c(0,0,0,.33),txt="2"]
 b>c [nudge=c(0,0,0,-.33),txt="3"]
 b>d [txt="4"]
@@ -88,6 +89,8 @@ m=c('plant'='a','herb'='b','omni'='c','pred'='d')
 e3=path(format2,fit,scal=2,size=5,autonudge=F,alpha=0.05,mask=m)
 png('mask_example.png',1000,500,type='cairo');e3;dev.off();system2('open','mask_example.png')
 
+#######################################################################################################
+#### these functions and their outputs may change dramatically in the future ####
 #### merge parameter estimates from two models ####
 (merged = semmerge(fit,sem('herb~plant\npred~plant',scale(data,center=F))))
 
