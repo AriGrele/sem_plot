@@ -58,7 +58,8 @@ pd=function(x){
 #### extracts parameter esitmates from jags sem output###
 #### formats to match lavaan output, but includes pd, credibility intervals
 bparam=function(x){
-  sims=x$sims.list[c('alpha','beta')]
+  x$sims.list[['deviance']]=NULL
+  sims=x$sims.list
   out=setNames(as.data.frame(matrix(ncol=9)),c('lhs','op','rhs','est','se','z','pvalue','ci.lower','ci.upper'))
   for(c in 1:length(sims)){
     for(i in 2:ncol(sims[[c]])){
