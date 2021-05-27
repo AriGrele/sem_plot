@@ -37,7 +37,7 @@ sembars=function(fit=NULL,s=1,mask=NULL,groups=NULL,flip=F,group='groups'){
         theme(panel.border = element_rect(fill=NA),
               panel.spacing=unit(0,'lines'))+
         guides(color=F,fill=F)
-      if(flip){g=g+facet_grid(reformulate('.',facet))+coord_flip()}
+      if(flip){g=g+facet_grid(reformulate('.',facet))}
       else{g=g+facet_grid(.~name)}
     }
     else{
@@ -45,11 +45,18 @@ sembars=function(fit=NULL,s=1,mask=NULL,groups=NULL,flip=F,group='groups'){
         geom_pointinterval(aes(y=est,ymin=ci.lower,ymax=ci.upper),size=s)+
         theme_classic()+
         geom_hline(yintercept = 0)}
-
+    if(flip){g=g+coord_flip()}
     return(g)}
   cat("Model needed\n")
   return(NULL)}
 
+#### bayesian probability of direction ####
+pd=function(x){
+  side=sign(median(x))
+  return(sum(side*x>0)/length(x))}
+
+#### extracts parameter esitmates from jags sem output###
+#### formats to match lavaan output, but includes pd, credibility intervals
 bparam=function(x){
   sims=x$sims.list[c('alpha','beta')]
   out=setNames(as.data.frame(matrix(ncol=9)),c('lhs','op','rhs','est','se','z','pvalue','ci.lower','ci.upper'))
@@ -59,6 +66,7 @@ bparam=function(x){
       out=rbind(out,data.frame('lhs'=names(x$sims.list)[c],'op'='~','rhs'=i,'est'=mean(co),'se'=sd(co)/sqrt(length(co)),'z'=NA,'pvalue'=pd(co),'ci.lower'=quantile(co,0.025),'ci.upper'=quantile(co,1-0.025)))}}
   return(out[-1,])}
 
+#### chooses which parameter function to use ####
 est_choice=function(x){return(switch(class(x),'lavaan'=parameterestimates,'jagsUI'=bparam)(x))}
 
 #### Creates ggplot object of specified path model ####

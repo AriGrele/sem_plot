@@ -17,7 +17,7 @@ devtools::source_url("https://github.com/AriGrele/sem_plot/blob/master/sem.R?raw
 data=data.frame('plant'=rnorm(500,10,1))
 data$herb=data$plant/10+rnorm(500,0,.1)
 data$omni=data$herb/10+data$plant/10+rnorm(500,0,.01)
-data$pred=data$herb/10-data$omni/2+rnorm(500,0,.01)
+data$pred=data$herb/10-data$omni/2+rnorm(500,0,.1)
 plot(data)
 
 #### lavaan sem ####
@@ -84,6 +84,13 @@ b>d [txt="4"]
 c>d [txt="5"]'
 
 m=c('plant'='a','herb'='b','omni'='c','pred'='d')
-e3=path(format2,fit,scal=2,size=5,autonudge=F,mask=m)
+e3=path(format2,fit,scal=2,size=5,autonudge=F,alpha=0.05,mask=m)
 png('mask_example.png',1000,500,type='cairo');e3;dev.off();system2('open','mask_example.png')
+
+#### merge parameter estimates from two models ####
+(merged = semmerge(fit,sem('herb~plant\npred~plant',scale(data,center=F))))
+
+#### plot parameter estimates and CIs ####
+sembars(fit,s = 5,flip=T,group='name')
+sembars(merged,s = 5,flip=T,group='name')
 
