@@ -64,7 +64,7 @@ bparam=function(x){
   for(c in 1:length(sims)){
     for(i in 2:ncol(sims[[c]])){
       co=sims[[c]][,i]
-      out=rbind(out,data.frame('lhs'=names(x$sims.list)[c],'op'='~','rhs'=i,'est'=mean(co),'se'=sd(co)/sqrt(length(co)),'z'=NA,'pvalue'=pd(co),'ci.lower'=quantile(co,0.025),'ci.upper'=quantile(co,1-0.025)))}}
+      out=rbind(out,data.frame('lhs'=names(x$sims.list)[c],'op'='~','rhs'=i,'est'=mean(co),'se'=sd(co)/sqrt(length(co)),'z'=NA,'pvalue'=1-2*(pd(co)-.5),'ci.lower'=quantile(co,0.025),'ci.upper'=quantile(co,1-0.025)))}}
   out$name=paste(out$lhs,out$rhs,sep='')
   return(out[-1,])}
 
@@ -89,7 +89,7 @@ guess_mask=function(name){
       for(t in lhs){
         if(regexpr('\\*',t)>0){
           split=stringr::str_split(t,'\\*')[[1]]
-          out=c(out,setNames(paste(split[2],rhs,sep='>'),split[1]))}}}}
+          out=c(out,setNames(paste(split[2],rhs,sep='>'),gsub('\\[|\\]','',split[1])))}}}}
   return(gsub('\\[i\\]','',out))}
 
 #### Creates ggplot object of specified path model ####
