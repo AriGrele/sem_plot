@@ -65,11 +65,32 @@ bparam=function(x){
     for(i in 2:ncol(sims[[c]])){
       co=sims[[c]][,i]
       out=rbind(out,data.frame('lhs'=names(x$sims.list)[c],'op'='~','rhs'=i,'est'=mean(co),'se'=sd(co)/sqrt(length(co)),'z'=NA,'pvalue'=pd(co),'ci.lower'=quantile(co,0.025),'ci.upper'=quantile(co,1-0.025)))}}
-  out$name=paste(out$lhs,'[',out$rhs,']',sep='')
+  out$name=paste(out$lhs,out$rhs,sep='')
   return(out[-1,])}
 
 #### chooses which parameter function to use ####
 est_choice=function(x){return(switch(class(x),'lavaan'=parameterestimates,'jagsUI'=bparam)(x))}
+
+#### generate masking vector####
+#### takes jags model file name as input, tries to create a mask vector of the format c(alpha[n]=A>B), e.g. ####
+guess_mask=function(name){
+  mod=read.csv(name)
+  l=c();start=0
+  for(r in 1:nrow(mod)){
+    if(start==1){l=c(l,mod[r,])}
+    if(regexpr('for \\(i in 1:N\\)',mod[r,])>0){start=1}
+    if(start==1&regexpr('}',mod[r,])>0){start=0}}
+  out=c()
+  for(r in l){
+    rhs=gsub(' ','',stringr::str_extract_all(r,'^.+?\\[i\\]'))
+    lhs=stringr::str_extract_all(r,'[ \\-\\+][A-Za-z]+?\\[\\d+\\]\\*.+\\[i\\]')
+    if(length(lhs)>0){
+      lhs=suppressWarnings(stringr::str_split(lhs[1],' ')[[1]])
+      for(t in lhs){
+        if(regexpr('\\*',t)>0){
+          split=stringr::str_split(t,'\\*')[[1]]
+          out=c(out,setNames(paste(split[2],rhs,sep='>'),split[1]))}}}}
+  return(gsub('\\[i\\]','',out))}
 
 #### Creates ggplot object of specified path model ####
 #### accepts model string, Lavaan or Jags model output, scale factor for paths/bullets/text, scale factor for arrows, alpha value to compare p value, toggels for outlines, text, filter to rename lavaan output to match model string ####
