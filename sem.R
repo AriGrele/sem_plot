@@ -26,7 +26,7 @@ sembars=function(fit=NULL,s=1,mask=NULL,groups=NULL,flip=F,group='groups'){
       if(is.data.frame(fit)){return(fit)}
       cat("Could not extract parameters from model\n")})
     e=e[e$op=='~',]
-    e$name=paste(e$rhs,e$lhs)
+    if(is.null(e$name)){e$name=paste(e$rhs,e$lhs)}
     if(!is.null(mask)){for(n in names(mask)){e$name=gsub(n,mask[n],e$name)}}
     if(!is.null(groups)){for(n in names(groups)){e$group=gsub(n,groups[n],e$group)}}
     if('groups' %in% names(e)){
@@ -65,6 +65,7 @@ bparam=function(x){
     for(i in 2:ncol(sims[[c]])){
       co=sims[[c]][,i]
       out=rbind(out,data.frame('lhs'=names(x$sims.list)[c],'op'='~','rhs'=i,'est'=mean(co),'se'=sd(co)/sqrt(length(co)),'z'=NA,'pvalue'=pd(co),'ci.lower'=quantile(co,0.025),'ci.upper'=quantile(co,1-0.025)))}}
+  out$name=paste(out$lhs,'[',out$rhs,']',sep='')
   return(out[-1,])}
 
 #### chooses which parameter function to use ####
@@ -93,7 +94,7 @@ path=function(model,fit=NULL,...){
     e=tryCatch(est_choice(fit),error=function(e){
       cat("Could not extract parameters from model\n")})                                         #get parameter estimates
     e=e[e$op=='~',]
-    e$name=paste(e$rhs,'>',e$lhs,sep='')                                                         #convert them to match model string format
+    if(is.null(e$name)){e$name=paste(e$rhs,'>',e$lhs,sep='')}                                    #convert them to match model string format
     e$pvalue=e$pvalue>parm$alpha                                                                 #add p value 
     e$nest=ceiling(abs(e$est/max(e$est)*parm$scal))*sign(e$est)                                  #add modified estimates
     if(!is.null(parm$mask)){for(n in names(parm$mask)){e$name=gsub(n,parm$mask[n],e$name)}}}     #rename vars
