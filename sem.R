@@ -1,3 +1,4 @@
+cat('Last updated 2021/5/30\n')
 #### Checks if vector between two other vectors, used to determine side path comes from ####
 inside=function(v1,v2,v3){
   a1=atan2(v1[2],v1[1]);a2=atan2(v2[2],v2[1]);a3=atan2(v3[2],v3[1])
@@ -6,14 +7,27 @@ inside=function(v1,v2,v3){
 
 #### merges multiple sem outputs into single data.frame ####
 semmerge=function(f1,f2,...){
-  l=c(f1,f2,list(...))
+  l=list(...)
+  if(is.null(l$names)){n=1:10000}
+  else{n=l$names}
+  if(is.null(l$mask)){mask=NULL}
+  else{mask=l$mask}
+  l$names=NULL;l$mask=NULL
+  
+  l=c(list(f1),list(f2),l)
   out=NULL
   for(i in 1:length(l)){
-    e=tryCatch(parameterEstimates(l[[i]]),error=function(x){
+    e=tryCatch(est_choice(l[[i]]),error=function(x){
       cat("Could not extract parameters from model\n")})
-    e$groups=(1:length(l))[i]
+    e$groups=n[i]
+    if(class(mask)=='list'){
+      for(m in names(mask[[i]])){
+        e$name=gsub(m,mask[[i]][m],e$name)}}
     if(is.null(out)){out=e}
     else{out=rbind(out,e)}}
+  if(class(mask)!='list'){for(m in names(mask)){out$name=gsub(m,mask[m],out$name);out$name=factor(out$name,levels=mask)}}
+  else{out$name=factor(out$name,levels=mask[[1]])}
+  out$groups=factor(out$groups,levels=n[1:length(l)])
   return(out)
 }
 
