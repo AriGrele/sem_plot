@@ -83,6 +83,7 @@ guess_mask=function(name){
   out=c()
   for(r in l){
     rhs=gsub(' ','',stringr::str_extract_all(r,'^.+?\\[i\\]'))
+    rhs=paste('y.',rhs,sep='')
     lhs=stringr::str_extract_all(r,'[ \\-\\+][A-Za-z]+?\\[\\d+\\]\\*.+\\[i\\]')
     if(length(lhs)>0){
       lhs=suppressWarnings(stringr::str_split(lhs[1],' ')[[1]])
