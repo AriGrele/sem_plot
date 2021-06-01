@@ -1,4 +1,4 @@
-cat('Last updated 2021/5/30\n')
+cat('Last updated 2021/5/31\n')
 #### Checks if vector between two other vectors, used to determine side path comes from ####
 inside=function(v1,v2,v3){
   a1=atan2(v1[2],v1[1]);a2=atan2(v2[2],v2[1]);a3=atan2(v3[2],v3[1])
@@ -46,6 +46,7 @@ sembars=function(fit=NULL,s=1,mask=NULL,groups=NULL,flip=F,group='groups'){
     if('groups' %in% names(e)){
       g=ggplot(e,aes_string(x=group))+
         geom_pointinterval(aes(y=est,ymin=ci.lower,ymax=ci.upper),size=s)+
+        geom_pointinterval(aes(y=est,ymin=ciml,ymax=cimu),size=2*s)+
         theme_classic()+
         geom_hline(yintercept = 0)+
         theme(panel.border = element_rect(fill=NA),
@@ -57,6 +58,7 @@ sembars=function(fit=NULL,s=1,mask=NULL,groups=NULL,flip=F,group='groups'){
     else{
       g=ggplot(e,aes(x=paste(rhs,lhs)))+
         geom_pointinterval(aes(y=est,ymin=ci.lower,ymax=ci.upper),size=s)+
+        geom_pointinterval(aes(y=est,ymin=ciml,ymax=cimu),size=2*s)+
         theme_classic()+
         geom_hline(yintercept = 0)}
     if(flip){g=g+coord_flip()}
@@ -74,16 +76,19 @@ pd=function(x){
 bparam=function(x){
   x$sims.list[['deviance']]=NULL
   sims=x$sims.list
-  out=setNames(as.data.frame(matrix(ncol=9)),c('lhs','op','rhs','est','se','z','pvalue','ci.lower','ci.upper'))
+  out=setNames(as.data.frame(matrix(ncol=11)),c('lhs','op','rhs','est','se','z','pvalue','ci.lower','ci.upper','ciml','cimu'))
   for(c in 1:length(sims)){
     for(i in 2:ncol(sims[[c]])){
       co=sims[[c]][,i]
-      out=rbind(out,data.frame('lhs'=names(x$sims.list)[c],'op'='~','rhs'=i,'est'=mean(co),'se'=sd(co)/sqrt(length(co)),'z'=NA,'pvalue'=1-2*(pd(co)-.5),'ci.lower'=quantile(co,0.025),'ci.upper'=quantile(co,1-0.025)))}}
+      out=rbind(out,data.frame('lhs'=names(x$sims.list)[c],'op'='~','rhs'=i,'est'=mean(co),'se'=sd(co)/sqrt(length(co)),'z'=pd(co),'pvalue'=1-2*(pd(co)-.5),'ci.lower'=quantile(co,0.025),'ci.upper'=quantile(co,1-0.025),'ciml'=quantile(co,0.1),'cimu'=quantile(co,1-0.1)))}}
   out$name=paste(out$lhs,out$rhs,sep='')
   return(out[-1,])}
 
 #### chooses which parameter function to use ####
-est_choice=function(x){return(switch(class(x),'lavaan'=parameterestimates,'jagsUI'=bparam)(x))}
+est_choice=function(x){
+  out=switch(class(x),'lavaan'=parameterestimates,'jagsUI'=bparam)(x)
+  if(is.null(out$ciml)){out$ciml=out$ci.lower;out$cimu=out$ci.upper}
+  return(out)}
 
 #### generate masking vector####
 #### takes jags model file name as input, tries to create a mask vector of the format c(alpha[n]=A>B), e.g. ####
