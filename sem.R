@@ -1,4 +1,4 @@
-cat('Last updated 2021/5/31\n')
+cat('Last updated 2021/06/02\n')
 #### Checks if vector between two other vectors, used to determine side path comes from ####
 inside=function(v1,v2,v3){
   a1=atan2(v1[2],v1[1]);a2=atan2(v2[2],v2[1]);a3=atan2(v3[2],v3[1])
@@ -40,7 +40,8 @@ sembars=function(fit=NULL,s=1,mask=NULL,groups=NULL,flip=F,group='groups'){
       if(is.data.frame(fit)){return(fit)}
       cat("Could not extract parameters from model\n")})
     e=e[e$op=='~',]
-    if(is.null(e$name)){e$name=paste(e$rhs,e$lhs)}
+    if(is.null(e$name)){e$name=as.factor(paste(e$rhs,e$lhs))}
+    if(!flip){e$name=factor(e$name,levels=rev(levels(e$name)))}
     if(!is.null(mask)){for(n in names(mask)){e$name=gsub(n,mask[n],e$name)}}
     if(!is.null(groups)){for(n in names(groups)){e$group=gsub(n,groups[n],e$group)}}
     if('groups' %in% names(e)){
@@ -53,10 +54,10 @@ sembars=function(fit=NULL,s=1,mask=NULL,groups=NULL,flip=F,group='groups'){
               panel.spacing=unit(0,'lines'))+
         guides(color=F,fill=F)
       if(flip){g=g+facet_grid(reformulate('.',facet))}
-      else{g=g+facet_grid(.~name)}
+      else{g=g+facet_grid(reformulate(facet,'.'))}
     }
     else{
-      g=ggplot(e,aes(x=paste(rhs,lhs)))+
+      g=ggplot(e,aes(x=name))+
         geom_pointinterval(aes(y=est,ymin=ci.lower,ymax=ci.upper),size=s)+
         geom_pointinterval(aes(y=est,ymin=ciml,ymax=cimu),size=2*s)+
         theme_classic()+
@@ -122,21 +123,24 @@ path=function(model,fit=NULL,...){
                'txtnudge'=c(0,0),
                'txt'='')
   parm=list(...)                                                                                #default values for vars missing from function call
-  if(is.null(parm$scal))   {parm$scal=5}
-  if(is.null(parm$ascal))  {parm$ascal=c(1,1)*parm$scal}
-  else{parm$ascal=parm$ascal*parm$scal*c(1,1)}
-  if(is.null(parm$size))   {parm$size=10}
-  if(is.null(parm$alpha))  {parm$alpha=10}
-  if(is.null(parm$outline)){parm$outline=T}
-  if(is.null(parm$mask))   {parm$mask=NULL}
-  if(is.null(parm$txtoff)) {parm$txtoff=F}
-  if(is.null(parm$autonudge)){parm$autonudge=T}
+  if(is.null(parm$scal))      {parm$scal=5}
+  if(is.null(parm$ascal))     {parm$ascal=c(1,1)*parm$scal}
+  else                        {parm$ascal=parm$ascal*parm$scal*c(1,1)}
+  if(is.null(parm$size))      {parm$size=10}
+  if(is.null(parm$alpha))     {parm$alpha=10}
+  if(is.null(parm$coloralpha)){parm$coloralpha=10}
+  if(is.null(parm$pal))       {parm$pal=c("#CC0C00FF","#5C88DAFF",'black')}
+  if(is.null(parm$outline))   {parm$outline=T}
+  if(is.null(parm$mask))      {parm$mask=NULL}
+  if(is.null(parm$txtoff))    {parm$txtoff=F}
+  if(is.null(parm$autonudge)) {parm$autonudge=T}
   if(!is.null(fit)){                                                                             #if model in call:
     e=tryCatch(est_choice(fit),error=function(e){
       cat("Could not extract parameters from model\n")})                                         #get parameter estimates
     e=e[e$op=='~',]
     if(is.null(e$name)){e$name=paste(e$rhs,'>',e$lhs,sep='')}                                    #convert them to match model string format
-    e$pvalue=e$pvalue>parm$alpha                                                                 #add p value 
+    e$pcolor=e$pvalue>parm$coloralpha
+    e$pvalue=e$pvalue>parm$alpha                                                                 #add p value compared to alpha
     e$nest=ceiling(abs(e$est/max(e$est)*parm$scal))*sign(e$est)                                  #add modified estimates
     if(!is.null(parm$mask)){for(n in names(parm$mask)){e$name=gsub(n,parm$mask[n],e$name)}}}     #rename vars
   
@@ -161,7 +165,8 @@ path=function(model,fit=NULL,...){
   box=na.omit(box)
   arrows=list();points=list();bpoints=list()                                                     #create lists for data about arrow paths, arrow heads
   for(n in names(arrow)){                                                                        #for each path:
-    if(is.null(fit)){row=data.frame('est'=1,'nest'=1,'pvalue'=0>parm$alpha)}                     #default values
+    if(is.null(fit)){
+      row=data.frame('est'=1,'nest'=1,'pvalue'=0>parm$alpha,'pcolor'=0>parm$coloralpha)}         #default values
     else{row=e[e$name==n,]}
     ns=str_split(n,'>')[[1]]                                                                     #split path into source, destination
     v1=info[[ns[1]]];v2=info[[ns[2]]]                                                            #info for source and destination
@@ -202,7 +207,8 @@ path=function(model,fit=NULL,...){
            arrows[[n]]$y+c(0,0,0,0),
            arrows[[n]]$y+c(-v1$size[2]/2,v2$size[2]/2,-v1$size[2]/2,v2$size[2]/2),
            arrows[[n]]$y+c(0,0,0,0))[[side]]
-    arrows[[n]]$est=row$nest;arrows[[n]]$p=row$pvalue;                                           #extract fit measures
+    arrows[[n]]$est=row$nest;arrows[[n]]$p=row$pvalue                                            #extract p / pd value
+    arrows[[n]]$pc=row$pcolor
     if(!parm$txtoff){arrows[[n]]$lab=arrow[[n]]$txt}                                             #extract labels
     else{arrows[[n]]$lab=round(row$est,2)}
     as=1.1;                                                                                      #scale values for labels, paths
@@ -217,23 +223,25 @@ path=function(model,fit=NULL,...){
     arrows[[n]]$midy=(arrows[[n]]$y[4]+arrows[[n]]$y[1])/2+arrow[[n]]$txtnudge[2]+space
   }
   
-  pal=c("#CC0C00FF","#5C88DAFF")                                                                 #default palette
+  pal=parm$pal                 
   s=ggplot()                                                                                     #new ggplot object
   nl=ifelse(rep(is.null(fit),length(names(arrows))),names(arrows),e$name[order(-abs(e$est))])    #for each path:
   for(n in nl){
+    arrows[[n]]$sign=ifelse(arrows[[n]]$pc,'p',sign(arrows[[n]]$est))
     if(parm$outline){s=s+geom_bezier(data=as.data.frame(arrows[[n]]),                            #add white beziers
                     aes(x=x,y=y),
                     size=parm$scal*abs(arrows[[n]]$est)*c(1.5,1)[(arrows[[n]]$p)+1],
                     color='white',
                     linetype=c('solid','dotted')[(arrows[[n]]$p)+1])}
     s=s+geom_bezier(data=as.data.frame(arrows[[n]]),                                             #add main beziers
-                    aes(x=x,y=y,color=as.factor(sign(est))),
+                    aes(x=x,y=y,color=as.factor(sign)),
                     size=parm$scal*abs(arrows[[n]]$est),
                     linetype=c('solid','dotted')[(arrows[[n]]$p)+1])
+    points[[n]]$pc=as.factor(arrows[[n]]$sign)
     if(length(points[[n]]$x)<4){                                                                 #bullets
-      s=s+geom_point(data=as.data.frame(points[[n]]),aes(x=x,y=y,color=as.character(-1)),size=1.5*parm$scal*abs(arrows[[n]]$est))}
+      s=s+geom_point(data=as.data.frame(points[[n]]),aes(x=x,y=y,color=pc),size=1.5*parm$scal*abs(arrows[[n]]$est))}
     else{                                                                                        #arrows
-      s=s+geom_polygon(data=as.data.frame(points[[n]]),aes(x=x,y=y,fill=as.character(1),color=as.character(1)),size=1)}
+      s=s+geom_polygon(data=as.data.frame(points[[n]]),aes(x=x,y=y,fill=pc,color=pc),size=1)}
     s=s+geom_text(data=as.data.frame(arrows[[n]]),                                               #labels
                   aes(x=midx,y=midy,label=lab),
                   color='black',
@@ -245,6 +253,6 @@ path=function(model,fit=NULL,...){
       theme_void()
   if(is.null(fit)){s=s+scale_color_manual(values='black')+                                       #black for metamodels
                       scale_fill_manual(values='black')}
-  else{s=s+scale_color_manual(values=c('-1'=pal[1],'1'=pal[2]))+                                 #pal for fit models
-           scale_fill_manual(values=c('-1'=pal[1],'1'=pal[2]))}
+  else{s=s+scale_color_manual(values=c('-1'=pal[1],'1'=pal[2],'p'=pal[3]))+                      #palette for fit models
+           scale_fill_manual(values=c('-1'=pal[1],'1'=pal[2],'p'=pal[3]))}
   return(s)}

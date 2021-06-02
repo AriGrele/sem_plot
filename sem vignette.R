@@ -86,7 +86,7 @@ b>d [txt="4"]
 c>d [txt="5"]'
 
 m=c('plant'='a','herb'='b','omni'='c','pred'='d')
-e3=path(format2,fit,scal=2,size=5,autonudge=F,alpha=0.05,mask=m)
+e3=path(format2,fit,scal=2,size=5,autonudge=F,alpha=0.05,mask=m,coloralpha=.05)
 png('mask_example.png',1000,500,type='cairo');e3;dev.off();system2('open','mask_example.png')
 
 #######################################################################################################
@@ -95,7 +95,6 @@ png('mask_example.png',1000,500,type='cairo');e3;dev.off();system2('open','mask_
 (merged = semmerge(fit,sem('herb~plant\npred~plant',scale(data,center=F))))
 
 #### plot parameter estimates and CIs ####
-sembars(fit,s = 5,flip=T)
-sembars(merged,s = 10,flip=T,group='name')
-sembars(merged,s = 10,flip=T)
-
+sembars(fit,s = 5,flip=F)
+sembars(merged,s = 10,flip=T,group='groups')
+merged
