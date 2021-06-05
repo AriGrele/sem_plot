@@ -1,4 +1,4 @@
-cat('Last updated 2021/06/02\n')
+cat('Last updated 2021/06/04\n')
 #### Checks if vector between two other vectors, used to determine side path comes from ####
 inside=function(v1,v2,v3){
   a1=atan2(v1[2],v1[1]);a2=atan2(v2[2],v2[1]);a3=atan2(v3[2],v3[1])
@@ -41,8 +41,10 @@ sembars=function(fit=NULL,s=1,mask=NULL,groups=NULL,flip=F,group='groups'){
       cat("Could not extract parameters from model\n")})
     e=e[e$op=='~',]
     if(is.null(e$name)){e$name=as.factor(paste(e$rhs,e$lhs))}
+    else{e$name=as.factor(e$name)}
     if(!flip){e$name=factor(e$name,levels=rev(levels(e$name)))}
     if(!is.null(mask)){for(n in names(mask)){e$name=gsub(n,mask[n],e$name)}}
+
     if(!is.null(groups)){for(n in names(groups)){e$group=gsub(n,groups[n],e$group)}}
     if('groups' %in% names(e)){
       g=ggplot(e,aes_string(x=group))+
@@ -57,6 +59,7 @@ sembars=function(fit=NULL,s=1,mask=NULL,groups=NULL,flip=F,group='groups'){
       else{g=g+facet_grid(reformulate(facet,'.'))}
     }
     else{
+      
       g=ggplot(e,aes(x=name))+
         geom_pointinterval(aes(y=est,ymin=ci.lower,ymax=ci.upper),size=s)+
         geom_pointinterval(aes(y=est,ymin=ciml,ymax=cimu),size=2*s)+
@@ -75,13 +78,14 @@ pd=function(x){
 #### extracts parameter esitmates from jags sem output###
 #### formats to match lavaan output, but includes pd, credibility intervals
 bparam=function(x){
-  x$sims.list[['deviance']]=NULL
   sims=x$sims.list
+  sims[['deviance']]=NULL
+  for(n in names(sims)){if(regexpr('\\.s?fit$',n)>0){sims[[n]]=NULL}}
   out=setNames(as.data.frame(matrix(ncol=11)),c('lhs','op','rhs','est','se','z','pvalue','ci.lower','ci.upper','ciml','cimu'))
   for(c in 1:length(sims)){
     for(i in 2:ncol(sims[[c]])){
       co=sims[[c]][,i]
-      out=rbind(out,data.frame('lhs'=names(x$sims.list)[c],'op'='~','rhs'=i,'est'=mean(co),'se'=sd(co)/sqrt(length(co)),'z'=pd(co),'pvalue'=1-2*(pd(co)-.5),'ci.lower'=quantile(co,0.025),'ci.upper'=quantile(co,1-0.025),'ciml'=quantile(co,0.1),'cimu'=quantile(co,1-0.1)))}}
+      out=rbind(out,data.frame('lhs'=names(sims)[c],'op'='~','rhs'=i,'est'=mean(co),'se'=sd(co)/sqrt(length(co)),'z'=pd(co),'pvalue'=1-pd(co),'ci.lower'=quantile(co,0.025),'ci.upper'=quantile(co,1-0.025),'ciml'=quantile(co,0.1),'cimu'=quantile(co,1-0.1)))}}
   out$name=paste(out$lhs,out$rhs,sep='')
   return(out[-1,])}
 
