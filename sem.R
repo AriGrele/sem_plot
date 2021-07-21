@@ -1,4 +1,4 @@
-cat('Last updated 2021/06/04\n')
+cat('Last updated 2021/07/21\n')
 #### Checks if vector between two other vectors, used to determine side path comes from ####
 inside=function(v1,v2,v3){
   a1=atan2(v1[2],v1[1]);a2=atan2(v2[2],v2[1]);a3=atan2(v3[2],v3[1])
@@ -54,7 +54,7 @@ sembars=function(fit=NULL,s=1,mask=NULL,groups=NULL,flip=F,group='groups'){
         geom_hline(yintercept = 0)+
         theme(panel.border = element_rect(fill=NA),
               panel.spacing=unit(0,'lines'))+
-        guides(color=F,fill=F)
+        guides(color='none',fill='none')
       if(flip){g=g+facet_grid(reformulate('.',facet))}
       else{g=g+facet_grid(reformulate(facet,'.'))}
     }
@@ -253,7 +253,7 @@ path=function(model,fit=NULL,...){
                                                                                                  #add boxes and text
   s=s+geom_rect(data=box,aes(xmin=x-w/2,xmax=x+w/2,ymin=y+h/2,ymax=y-h/2),fill='white', colour = "black")+
       geom_text(data=box,aes(x=x,y=y,label=n),size=parm$size,color='black')
-  s=s+guides(fill=F,color=F)+                                                                    #remove key, axes
+  s=s+guides(fill='none',color='none')+                                                                    #remove key, axes
       theme_void()
   if(is.null(fit)){s=s+scale_color_manual(values='black')+                                       #black for metamodels
                       scale_fill_manual(values='black')}
