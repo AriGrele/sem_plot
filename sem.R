@@ -1,4 +1,4 @@
-cat('Last updated 2021/07/21\n')
+cat('Last updated 2021/08/14\n')
 #### Checks if vector between two other vectors, used to determine side path comes from ####
 inside=function(v1,v2,v3){
   a1=atan2(v1[2],v1[1]);a2=atan2(v2[2],v2[1]);a3=atan2(v3[2],v3[1])
@@ -32,7 +32,7 @@ semmerge=function(f1,f2,...){
 }
 
 #### creates ggplot object of paramter estimates and CIs ####
-sembars=function(fit=NULL,s=1,mask=NULL,groups=NULL,flip=F,group='groups'){
+sembars=function(fit=NULL,s=1,mask=NULL,groups=NULL,flip=F,group='groups',label='none'){
   if(group!='groups'){group='name';facet='groups'}
   else{facet='name'}
   if(!is.null(fit)){
@@ -66,6 +66,8 @@ sembars=function(fit=NULL,s=1,mask=NULL,groups=NULL,flip=F,group='groups'){
         theme_classic()+
         geom_hline(yintercept = 0)}
     if(flip){g=g+coord_flip()}
+    if(label!='none'){g=g+geom_text(data=e,aes(label=c('','*')[(pvalue<0.05)+1],
+                                                         y=label),size=s)}
     return(g)}
   cat("Model needed\n")
   return(NULL)}
