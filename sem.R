@@ -1,4 +1,4 @@
-cat('Last updated 2021/08/14\n')
+cat('Last updated 2021/09/01\n')
 #### Checks if vector between two other vectors, used to determine side path comes from ####
 inside=function(v1,v2,v3){
   a1=atan2(v1[2],v1[1]);a2=atan2(v2[2],v2[1]);a3=atan2(v3[2],v3[1])
@@ -135,7 +135,7 @@ path=function(model,fit=NULL,...){
   if(is.null(parm$size))      {parm$size=10}
   if(is.null(parm$alpha))     {parm$alpha=10}
   if(is.null(parm$coloralpha)){parm$coloralpha=10}
-  if(is.null(parm$pal))       {parm$pal=c("#CC0C00FF","#5C88DAFF",'black')}
+  if(is.null(parm$pal))       {parm$pal=c("#CC0C00FF","#5b84c4",'black')}
   if(is.null(parm$outline))   {parm$outline=T}
   if(is.null(parm$mask))      {parm$mask=NULL}
   if(is.null(parm$txtoff))    {parm$txtoff=F}
