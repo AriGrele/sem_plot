@@ -32,7 +32,7 @@ semmerge=function(f1,f2,...){
 }
 
 #### creates ggplot object of paramter estimates and CIs ####
-sembars=function(fit=NULL,s=1,mask=NULL,groups=NULL,flip=F,group='groups',label='none'){
+sembars=function(fit=NULL,s=1,mask=NULL,groups=NULL,flip=F,group='groups',label='none',labsize=1){
   if(group!='groups'){group='name';facet='groups'}
   else{facet='name'}
   if(!is.null(fit)){
@@ -67,7 +67,7 @@ sembars=function(fit=NULL,s=1,mask=NULL,groups=NULL,flip=F,group='groups',label=
         geom_hline(yintercept = 0)}
     if(flip){g=g+coord_flip()}
     if(label!='none'){g=g+geom_text(data=e,aes(label=c('','*')[(pvalue<0.05)+1],
-                                                         y=label),size=s)}
+                                                         y=label),size=labsize)}
     return(g)}
   cat("Model needed\n")
   return(NULL)}
@@ -251,7 +251,7 @@ path=function(model,fit=NULL,...){
     s=s+geom_text(data=as.data.frame(arrows[[n]]),                                               #labels
                   aes(x=midx,y=midy,label=lab),
                   color='black',
-                  size=parm$size)}
+                  size=parm$size*1.25)}
                                                                                                  #add boxes and text
   s=s+geom_rect(data=box,aes(xmin=x-w/2,xmax=x+w/2,ymin=y+h/2,ymax=y-h/2),fill='white', colour = "black")+
       geom_text(data=box,aes(x=x,y=y,label=n),size=parm$size,color='black')
