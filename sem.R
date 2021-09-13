@@ -1,4 +1,4 @@
-cat('Last updated 2021/09/01\n')
+cat('Last updated 2021/09/12\n')
 #### Checks if vector between two other vectors, used to determine side path comes from ####
 inside=function(v1,v2,v3){
   a1=atan2(v1[2],v1[1]);a2=atan2(v2[2],v2[1]);a3=atan2(v3[2],v3[1])
@@ -91,9 +91,13 @@ bparam=function(x){
   out$name=paste(out$lhs,out$rhs,sep='')
   return(out[-1,])}
 
-#### chooses which parameter function to use ####
+bsemparam=function(x){bparam(x@jags_model)}
+#### chooses which parameter function to use #### TO DO: convert to generic method
 est_choice=function(x){
-  out=switch(class(x),'lavaan'=parameterestimates,'jagsUI'=bparam)(x)
+  out=switch(class(x),
+             'lavaan'=parameterestimates,
+             'jagsUI'=bparam,
+             'bsem_object'=bsemparam)(x)
   if(is.null(out$ciml)){out$ciml=out$ci.lower;out$cimu=out$ci.upper}
   return(out)}
 
@@ -135,6 +139,7 @@ path=function(model,fit=NULL,...){
   if(is.null(parm$size))      {parm$size=10}
   if(is.null(parm$alpha))     {parm$alpha=10}
   if(is.null(parm$coloralpha)){parm$coloralpha=10}
+  if(is.null(parm$thresh))    {parm$thresh=0}
   if(is.null(parm$pal))       {parm$pal=c("#CC0C00FF","#5b84c4",'black')}
   if(is.null(parm$outline))   {parm$outline=T}
   if(is.null(parm$mask))      {parm$mask=NULL}
@@ -146,6 +151,7 @@ path=function(model,fit=NULL,...){
     e=e[e$op=='~',]
     if(is.null(e$name)){e$name=paste(e$rhs,'>',e$lhs,sep='')}                                    #convert them to match model string format
     e$pcolor=e$pvalue>parm$coloralpha
+    e$pcolor2=abs(e$est)<parm$thresh
     e$pvalue=e$pvalue>parm$alpha                                                                 #add p value compared to alpha
     e$nest=ceiling(abs(e$est/max(e$est)*parm$scal))*sign(e$est)                                  #add modified estimates
     if(!is.null(parm$mask)){for(n in names(parm$mask)){e$name=gsub(n,parm$mask[n],e$name)}}}     #rename vars
@@ -172,7 +178,11 @@ path=function(model,fit=NULL,...){
   arrows=list();points=list();bpoints=list()                                                     #create lists for data about arrow paths, arrow heads
   for(n in names(arrow)){                                                                        #for each path:
     if(is.null(fit)){
-      row=data.frame('est'=1,'nest'=1,'pvalue'=0>parm$alpha,'pcolor'=0>parm$coloralpha)}         #default values
+      row=data.frame('est'=1,
+                     'nest'=1,
+                     'pvalue'=0>parm$alpha,
+                     'pcolor'=0>parm$coloralpha,
+                     'pcolor2'=0<parm$thresh)}         #default values
     else{row=e[e$name==n,]}
     ns=str_split(n,'>')[[1]]                                                                     #split path into source, destination
     v1=info[[ns[1]]];v2=info[[ns[2]]]                                                            #info for source and destination
@@ -215,6 +225,7 @@ path=function(model,fit=NULL,...){
            arrows[[n]]$y+c(0,0,0,0))[[side]]
     arrows[[n]]$est=row$nest;arrows[[n]]$p=row$pvalue                                            #extract p / pd value
     arrows[[n]]$pc=row$pcolor
+    arrows[[n]]$pc2=row$pcolor2
     if(!parm$txtoff){arrows[[n]]$lab=arrow[[n]]$txt}                                             #extract labels
     else{arrows[[n]]$lab=round(row$est,2)}
     as=1.1;                                                                                      #scale values for labels, paths
@@ -234,6 +245,7 @@ path=function(model,fit=NULL,...){
   nl=ifelse(rep(is.null(fit),length(names(arrows))),names(arrows),e$name[order(-abs(e$est))])    #for each path:
   for(n in nl){
     arrows[[n]]$sign=ifelse(arrows[[n]]$pc,'p',sign(arrows[[n]]$est))
+    arrows[[n]]$sign=ifelse(arrows[[n]]$pc2,'p',sign(arrows[[n]]$est))
     if(parm$outline){s=s+geom_bezier(data=as.data.frame(arrows[[n]]),                            #add white beziers
                     aes(x=x,y=y),
                     size=parm$scal*abs(arrows[[n]]$est)*c(1.5,1)[(arrows[[n]]$p)+1],
@@ -253,7 +265,8 @@ path=function(model,fit=NULL,...){
                   color='black',
                   size=parm$size*1.25)}
                                                                                                  #add boxes and text
-  s=s+geom_rect(data=box,aes(xmin=x-w/2,xmax=x+w/2,ymin=y+h/2,ymax=y-h/2),fill='white', colour = "black")+
+  s=s+geom_rect(data=box,aes(xmin=x-w/2,xmax=x+w/2,ymin=y+h/2,ymax=y-h/2),
+                fill='white', colour = "black",size=parm$scal/2.5)+
       geom_text(data=box,aes(x=x,y=y,label=n),size=parm$size,color='black')
   s=s+guides(fill='none',color='none')+                                                                    #remove key, axes
       theme_void()
