@@ -1,4 +1,4 @@
-cat('Last updated 2021/09/12\n')
+cat('Last updated 2021/10/08\n')
 #### Checks if vector between two other vectors, used to determine side path comes from ####
 inside=function(v1,v2,v3){
   a1=atan2(v1[2],v1[1]);a2=atan2(v2[2],v2[1]);a3=atan2(v3[2],v3[1])
@@ -12,7 +12,9 @@ semmerge=function(f1,f2,...){
   else{n=l$names}
   if(is.null(l$mask)){mask=NULL}
   else{mask=l$mask}
-  l$names=NULL;l$mask=NULL
+  if(is.null(l$filter)){filter=NULL}
+  else{filter=l$filter}
+  l$names=NULL;l$mask=NULL;l$filter=NULL
   
   l=c(list(f1),list(f2),l)
   out=NULL
@@ -20,6 +22,7 @@ semmerge=function(f1,f2,...){
     e=tryCatch(est_choice(l[[i]]),error=function(x){
       cat("Could not extract parameters from model\n")})
     e$groups=n[i]
+    if(!is.null(filter)){e=e[!(e$name%in%filter),]}
     if(class(mask)=='list'){
       for(m in names(mask[[i]])){
         e$name=gsub(m,mask[[i]][m],e$name)}}
@@ -32,7 +35,7 @@ semmerge=function(f1,f2,...){
 }
 
 #### creates ggplot object of paramter estimates and CIs ####
-sembars=function(fit=NULL,s=1,mask=NULL,groups=NULL,flip=F,group='groups',label='none',labsize=1){
+sembars=function(fit=NULL,s=1,mask=NULL,groups=NULL,flip=F,group='groups',label='none',labsize=1,filter=NULL){
   if(group!='groups'){group='name';facet='groups'}
   else{facet='name'}
   if(!is.null(fit)){
@@ -43,6 +46,7 @@ sembars=function(fit=NULL,s=1,mask=NULL,groups=NULL,flip=F,group='groups',label=
     if(is.null(e$name)){e$name=as.factor(paste(e$rhs,e$lhs))}
     else{e$name=as.factor(e$name)}
     if(!flip){e$name=factor(e$name,levels=rev(levels(e$name)))}
+    if(!is.null(filter)){e=e[!(e$name%in%filter),]}
     if(!is.null(mask)){for(n in names(mask)){e$name=gsub(n,mask[n],e$name)}}
 
     if(!is.null(groups)){for(n in names(groups)){e$group=gsub(n,groups[n],e$group)}}
@@ -184,12 +188,13 @@ path=function(model,fit=NULL,...){
                      'pcolor'=0>parm$coloralpha,
                      'pcolor2'=0<parm$thresh)}         #default values
     else{row=e[e$name==n,]}
+    
     ns=str_split(n,'>')[[1]]                                                                     #split path into source, destination
     v1=info[[ns[1]]];v2=info[[ns[2]]]                                                            #info for source and destination
     sizes=c(v1$size,v2$size)                                                                     #extract box sizes
     v3=(v2$pos-v1$pos)                                                                           #vector between box centers
     ins=c()
-    for(i in 1:4){                                                                               #for a vector from the center of the source box to each corner of the source box, find if vector towards destination between two corners
+    for(i in 1:4){                                                              #for a vector from the center of the source box to each corner of the source box, find if vector towards destination between two corners
       corners=list(c(-1,1)*v1$size,
                    c(1,1)*v1$size,
                    c(1,-1)*v1$size,
@@ -223,7 +228,7 @@ path=function(model,fit=NULL,...){
            arrows[[n]]$y+c(0,0,0,0),
            arrows[[n]]$y+c(-v1$size[2]/2,v2$size[2]/2,-v1$size[2]/2,v2$size[2]/2),
            arrows[[n]]$y+c(0,0,0,0))[[side]]
-    arrows[[n]]$est=row$nest;arrows[[n]]$p=row$pvalue                                            #extract p / pd value
+    arrows[[n]]$est=as.numeric(row$nest);arrows[[n]]$p=row$pvalue                                            #extract p / pd value
     arrows[[n]]$pc=row$pcolor
     arrows[[n]]$pc2=row$pcolor2
     if(!parm$txtoff){arrows[[n]]$lab=arrow[[n]]$txt}                                             #extract labels
@@ -244,6 +249,8 @@ path=function(model,fit=NULL,...){
   s=ggplot()                                                                                     #new ggplot object
   nl=ifelse(rep(is.null(fit),length(names(arrows))),names(arrows),e$name[order(-abs(e$est))])    #for each path:
   for(n in nl){
+    
+    
     arrows[[n]]$sign=ifelse(arrows[[n]]$pc,'p',sign(arrows[[n]]$est))
     arrows[[n]]$sign=ifelse(arrows[[n]]$pc2,'p',sign(arrows[[n]]$est))
     if(parm$outline){s=s+geom_bezier(data=as.data.frame(arrows[[n]]),                            #add white beziers
